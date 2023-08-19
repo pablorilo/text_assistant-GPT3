@@ -1,0 +1,14 @@
+# Ignorar archivos generados automáticamente
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignorar archivo de configuración de entorno
+.env
+
+#Entorno virtual
+nlp-chat/
+
+#modulos init
+__init__.py

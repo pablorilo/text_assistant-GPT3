@@ -1,0 +1,12 @@
+python-dotenv
+llama-index
+pypdf
+openai
+langchain
+typer[all]
+rich
+click
+sentence_transformers
+cachetools
+setuptools
+docx2txt
