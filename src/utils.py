@@ -2,9 +2,13 @@ import typer  # pip install "typer[all]"
 from rich import print  # pip install rich
 from rich.table import Table
 from rich.prompt import Prompt, Confirm
+
+from langchain import PromptTemplate
+from langchain.agents.agent import AgentExecutor
 import typer  
 import click
-from llama_index import VectorStoreIndex
+from config import Config
+
 
 def print_welcome_message() -> None:
     """función que genera el texto inicial del programa """
@@ -24,26 +28,32 @@ y nombres de los documentos que se ha utilizado para generar la respuesta, esta 
 def get_language_choice() -> str:
     """función que imprime en pantalla las opciones de idioma (Español, Aleman, Inglés)
     Returns:
-         str: texto que se añadirá a la consulta para indicarle el idioma""" 
-    
+         str: texto que se enviará al prompt""" 
+    lng_options = Config.lng_dict
+    template = '''Quiero que a partir de ahora respondas en {choice}'''
+    promp_temp = PromptTemplate(
+                                template= template,
+                                input_variables = ["choice"]
+                                )
     while True:
         #Creamos las opciones
-        click_choice = click.Choice(['1', '2', '3'])
+        click_choice = click.Choice(lng_options.keys())
         #Solicitamos al usuario que seleccione un idioma
         print("\n🌍 ¿En qué idioma deseas la respuesta?:\n")
-        choice = typer.prompt("1 - Español\n2 - Alemán\n3 - Inglés \n \nOpciones",
+        #Gneramos las opciones en base al lng_dict
+        opt = "\n".join([f"{key} - {value}" for key, value in lng_options.items()])
+        opt += "\n\nOpciones"
+        choice = typer.prompt(opt,
                               show_choices=True,
                               type=click_choice
                               )
         #retornamos opción                
-        if choice == "1":
-            return "Quiero que me respondas en Español"
-        elif choice == "2":
-            return "Quiero que me respondas en Alemán"
-        elif choice == "3":
-            return "Quiero que me respondas en Inglés"
+        if choice in lng_options.keys():
+            print(f"[cornflower_blue]\nIdioma seleccionado: {lng_options[choice]}\n")
+            prompt_value = promp_temp.format(choice=lng_options[choice])
+            return prompt_value
         else:
-            typer.echo("Por favor, ingresa una opción válida (1, 2 o 3).")    
+            typer.echo(f"Por favor, ingresa una opción válida {lng_options.keys()}.")    
 
 def __prompt() -> str:
     """
@@ -90,21 +100,19 @@ def extract_pages_by_filename(document_dict: dict) -> dict:
 
     return pages_by_file   
 
-def answer_question_from_file(index: VectorStoreIndex, question:str) -> tuple:    
+def answer_question_from_file(agent: AgentExecutor, question:str) :    
         """
     Responde a una pregunta utilizando un índice vectorial y un motor de consultas.
     Args:
-        index (VectorStoreIndex): El índice vectorial del contexto.
+        agent (AgentExecutor): Instancia de AgentExecutor.
         question (str): La pregunta para la cual se busca una respuesta.
     Returns:
         str: La respuesta encontrada a la pregunta.
     """
-        query_engine = index.as_query_engine()  
-        answer_query =  query_engine.query(question) 
-        answer = answer_query.response
-        dict_metadata = answer_query.metadata
-        document_pages = extract_pages_by_filename(dict_metadata)
-        return (answer, document_pages)      
+        result = agent({"input": question})
+                       
+        return result
+        
 
 
 

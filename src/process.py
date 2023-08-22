@@ -1,10 +1,21 @@
-from llama_index import VectorStoreIndex, LLMPredictor, ServiceContext
-from llama_index import OpenAIEmbedding, Document
+from pydantic import BaseModel, Field
+
+from langchain.agents.agent_toolkits import create_conversational_retrieval_agent
+from langchain.text_splitter import CharacterTextSplitter
+from langchain.vectorstores import FAISS
+from langchain.embeddings import OpenAIEmbeddings
 from langchain.chat_models import ChatOpenAI
-from config import Config
-from cachetools import TTLCache
+from langchain.document_loaders import PyPDFLoader
+from langchain.chains import RetrievalQA
+from langchain.agents import initialize_agent,AgentType,Tool
+from langchain.agents.agent import AgentExecutor
+
 import openai
+
 from config import Config
+
+class DocumentInput(BaseModel):
+    question: str = Field()
 
 class TextEmbedding:
     """
@@ -20,53 +31,48 @@ class TextEmbedding:
 
     def __init__(self):
         """
-        Inicializa la clase y configura las instancias necesarias.
+        Inicializa la clase y configura la instancia del modelo.
         """
-        openai.api_key = Config.api_key
         #Creamos instancia de ChatOpenai a traves de langchain
-        chat_openai = ChatOpenAI(temperature=0, 
+        
+        self.llm = ChatOpenAI(temperature=0, 
                                  model_name = Config.model_name, 
-                                 openai_api_key= Config.api_key)
-        #Instanciamos el modelo
-        llm_predictor = LLMPredictor(llm=chat_openai) 
-        #Indexamos el contenido de los PDF´s
-        self.service_context = ServiceContext.from_defaults(llm_predictor= llm_predictor)
-        self.cache = TTLCache(maxsize=100, ttl=3600)
-
-    def process_text(self, docs: list) -> VectorStoreIndex:
+                                 openai_api_key= Config.api_key)     
+       
+    def process_text(self, docs: list) -> AgentExecutor:
         """
         Procesa los documentos y construye un índice de texto.
         Args:
-            docs (list): Lista de documentos a ser indexados.
+            docs (list): Lista de rutas de pdf en la carpeta.
         Returns:
-            VectorStoreIndex: Índice de texto construido a partir de los documentos.
+            AgentExecutor: Agent que se encargara de la interación con el modelo.
         """
-        # Intenta obtener el índice desde el caché
-        self.index = self.cache.get("index")
-        if self.index is None: # Si no hay índice en caché, crea un nuevo índice y lo guarda en caché
-            self.index= VectorStoreIndex.from_documents(docs, service_context=self.service_context)
-            self.cache["index"] = self.index
-            self.index_init = self.index
-        return self.index
+        tools = []
+        #itera sobre los documentos de la carpeta y los va vectorizando
+        for file in docs:
+            loader = PyPDFLoader(file)
+            pages = loader.load_and_split()
+            text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
+            docs = text_splitter.split_documents(pages)
+            openai.api_key = Config.api_key
+            embeddings = OpenAIEmbeddings(openai_api_key = Config.api_key)
+            retriever = FAISS.from_documents(docs, embeddings).as_retriever()
+
+            # Añadimos los retrieves a los tools
+            tools.append(
+                Tool(
+                    args_schema=DocumentInput,
+                    name= file.split("\\")[-1][:-4],
+                    description=f"texto que formara parte del contexto",
+                    func=RetrievalQA.from_chain_type(llm=self.llm, retriever=retriever),
+                )
+            )
+        #Inicializamos el agente
+        agent = initialize_agent(
+                agent=AgentType.OPENAI_FUNCTIONS,
+                tools=tools,
+                llm=self.llm,
+                )
+
+        return agent
     
-    def add_dialog_to_context(self, docs: list) -> None:
-        """
-        Agrega documentos al contexto de la conversación.
-        Args:
-            docs (list): Lista de documentos a ser agregados al contexto.
-        """
-        embed_model = OpenAIEmbedding()
-        doc_chunks = []
-        for i, text in enumerate(docs):
-            embedding = embed_model.get_text_embedding(text)
-            doc = Document(text=text, embedding= embedding)
-            doc_chunks.append(doc)
-
-        for doc_chunk in doc_chunks:
-            self.index.insert(doc_chunk)
-
-    def reinitial_context(self):
-        """
-        Reinicia el contexto de la conversación al estado inicial.
-        """
-        self.index = self.index_init

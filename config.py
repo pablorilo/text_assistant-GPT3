@@ -11,6 +11,13 @@ class Config:
     api_key = os.environ.get('API_KEY')
     # Obtiene la ruta de los documentos desde la variable de entorno "DOCS_PATH"
     docs_path = os.environ.get('DOCS_PATH')
+    #Idiomas del programa
+    lng_dict = {
+        "1": "Español",
+        "2": "Alemán",
+        "3": "Inglés"
+        }
+
 
     @classmethod
     def validate_config(cls):
@@ -24,3 +31,5 @@ class Config:
             raise ValueError("API_KEY no está configurado en las variables de entorno.")
         if not cls.docs_path:
             raise ValueError("DOCS_PATH no está configurado en las variables de entorno.")
+        
+        

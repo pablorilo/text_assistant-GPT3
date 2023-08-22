@@ -1,8 +1,10 @@
 import typer
+import os
+import glob
 
 from src.utils import answer_question_from_file
 from rich import print  # pip install rich
-from llama_index import  SimpleDirectoryReader
+
 
 from config import Config
 from src.process import TextEmbedding
@@ -15,35 +17,30 @@ def main():
   # Validamos la configuración de las variables de entorno
   Config.validate_config()
   # Cargar datos de documentos desde el directorio especificado
-  docs = SimpleDirectoryReader(Config.docs_path).load_data()
+  archivos_pdf = glob.glob(os.path.join(Config.docs_path, "*.pdf"))
   #Creamos instancia de la clase que se encarga del embedding
   text_processor = TextEmbedding()
   #Procesar los documentos y construir un índice de texto
-  index = text_processor.process_text(docs)
+  agent = text_processor.process_text(archivos_pdf)
+
   #LLmamaos al metodo que genera la bienvenida a la interface
   print_welcome_message()
    # Obtener la selección de idioma del usuario
-  lng = get_language_choice()
+  lng_prompt = get_language_choice()
+  answer_question_from_file(agent, lng_prompt)
+  print("[bold cornflower_blue]En qué puedo ayudarte?")
 
   while True:     
     question = __prompt()
     if question == 'lng':
        # Cambiar el idioma si el usuario lo solicita
-       lng = get_language_choice()
+       lng_prompt = get_language_choice()
+       answer_question_from_file(agent, lng_prompt)
        question = __prompt()
-    # Agregar el idioma a la pregunta para el contexto
-    question = f'{question}, {lng}'
     # Obtener respuesta a la pregunta del archivo utilizando el índice
-    response = answer_question_from_file(index, question)
-    answer = response[0]
-    document_page = response[1]
-    #montamos las referencias sobre las que se creó la respuesta
-    file_pages = [f"{filename} -> pág.({', '.join(pages)})" for filename, pages in document_page.items()]
-    file_pages_string = ", ".join(file_pages)
-    #Añadimos al contexto el diálogo
-    text_processor.add_dialog_to_context([question,answer])
+    response = answer_question_from_file(agent, question)
     # Mostrar la respuesta y la información de las páginas en la interfaz de línea de comandos
-    print(f"\n[bold green] Respuesta:[/bold green] [green]{answer}[/green]\n\n[green] ({file_pages_string})[/green]")
+    print(f"\n[bold green] Respuesta:[/bold green] [green]{response['output']}[/green]\n")
 
     
 if __name__ == "__main__":

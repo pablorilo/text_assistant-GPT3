@@ -10,3 +10,7 @@ sentence_transformers
 cachetools
 setuptools
 docx2txt
+unstructured
+faiss-cpu
+glob2
+pydantic
