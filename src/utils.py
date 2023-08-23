@@ -30,7 +30,7 @@ def get_language_choice() -> str:
     Returns:
          str: texto que se enviará al prompt""" 
     lng_options = Config.lng_dict
-    template = '''Quiero que a partir de ahora respondas en {choice}'''
+    template = '''Quiero que a partir de ahora respondas en {choice} y en relación al contexto pasado'''
     promp_temp = PromptTemplate(
                                 template= template,
                                 input_variables = ["choice"]
