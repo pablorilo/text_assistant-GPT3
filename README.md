@@ -10,8 +10,6 @@
 ## Diseño de carpetas
 <pre>
 text_assistant-GPT3/
-    ├── datos/
-    │   └── # Archivos de datos
     ├── src/
     │   ├── utils/
     │   └── process/
@@ -22,7 +20,6 @@ text_assistant-GPT3/
     ├── setup.py
 </pre>
 
-   - **datos**: Carpeta en donde se alojarán los documentos a consultar
    - **utils**: Fichero que contiene diferentes métodos de la app
    - **process**: Fichero que realizar el embedding de los datos
    - **config**: Fichero con la configuración de las variables de entorno

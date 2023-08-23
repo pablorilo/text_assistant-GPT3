@@ -8,7 +8,7 @@ from llama_index import VectorStoreIndex
 
 def print_welcome_message() -> None:
     """función que genera el texto inicial del programa """
-    title = ">>>>>>>>>>>>>>>>>> 💬 Text Assistant 💬 <<<<<<<<<<<<<<<<<<"
+    title = "\n\n>>>>>>>>>>>>>>>>>> 💬 Text Assistant 💬 <<<<<<<<<<<<<<<<<<"
     centered_title = title.center(150)
     print(f"[bold blue_violet] {centered_title} [/bold blue_violet]\n")
     print("[blue_violet]Bienvenido al sistema de asistencia documental impulsado por el poder de OpenAI's GPT-3.5 Turbo.\
