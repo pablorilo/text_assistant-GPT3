@@ -24,13 +24,13 @@ class TextEmbedding:
         """
         openai.api_key = Config.api_key
         #Creamos instancia de ChatOpenai a traves de langchain
-        chat_openai = ChatOpenAI(temperature=0, 
+        """chat_openai = ChatOpenAI(temperature=0, 
                                  model_name = Config.model_name, 
                                  openai_api_key= Config.api_key)
         #Instanciamos el modelo
         llm_predictor = LLMPredictor(llm=chat_openai) 
         #Indexamos el contenido de los PDF´s
-        self.service_context = ServiceContext.from_defaults(llm_predictor= llm_predictor)
+        self.service_context = ServiceContext.from_defaults()"""
         self.cache = TTLCache(maxsize=100, ttl=3600)
 
     def process_text(self, docs: list) -> VectorStoreIndex:
